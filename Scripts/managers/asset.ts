@@ -13,16 +13,18 @@ module managers {
 
 
     // images
-    {id: "playerTank", src: "./Assets/images/greenTank.png"},
-    {id: "enemyTank", src: "./Assets/images/redTank.png"},
+    {id: "playerTank", src: "./Assets/images/Tanks/tank_green.png"},
+    {id: "enemyTank", src: "./Assets/images/Tanks/tank_red.png"},
     {id: "menuBackground", src: "./Assets/images/tankWall3.jpg"},
     {id: "dirt", src: "./Assets/images/Environment/dirt.png"},
+    {id: "bullet", src: "./Assets/images/Bullets/bulletRedSilver_outline.png"},
 
 
     // sounds
     {id: "playMusic", src: "./Assets/audio/play.mp3"},
     {id: "endMusic", src: "./Assets/audio/end.mp3"},
-    {id: "menuMusic", src: "./Assets/audio/menu.mp3"}
+    {id: "menuMusic", src: "./Assets/audio/menu.mp3"},
+    {id: "fire", src: "./Assets/audio/shoot.wav"}
     
 
   ]

@@ -1,30 +1,48 @@
-namespace objects {
-  export class Enemy{
-    // PRIVATE INSTANCE VARIABLES
-    private _currentWayPoint: number;
-    private _waypoints;
+/// <reference path = "../../Scripts/objects/tank.ts" />
 
-    // PUBLIC PROPERTIES
+namespace objects {
+  export class Enemy extends objects.Tank {
+    private waypoints;
+
 
     // CONSTRUCTORS
-    constructor(x, y, waypoints) {
-     
-    //     super(
-    //     "enemyTank",
-    //     x * config.Screen.TILE_SIZE,
-    //     y * config.Screen.TILE_SIZE
-    //   );
-      this._waypoints = waypoints;
-     // this.Start();
+    constructor(image: string, waypoints) {
+      super(image);
+      this.Shoot = this.Shoot.bind(this);
+      this.waypoints = [];
+      this.Start();
     }
 
-    // public patrol():void {
-    //   const { TILE_SIZE } = config.Screen;
-    //   let tileX = this.x / TILE_SIZE;
-    //   let tileY = this.y / TILE_SIZE;
+    // PUBLIC METHODS
+    public Start(): void {}
 
-    //   let [targetX, targetY] = this._waypoints[this._currentWayPoint];
-    //   // this.followTarget(new Vector2(targetX, targetY));
-    // }
+    public Update(): void {
+      this.bulletSpawn.x = this.x;
+      this.bulletSpawn.y = this.y - 35;
+
+      for (let b of this.bullets) {
+        b.Update();
+      }
+
+      this.stage.update();
+    }
+
+    public Shoot(): void {
+      let targetX = objects.Game.stage.mouseX - this.x;
+      let targetY = objects.Game.stage.mouseY - this.y;
+
+      let mag = Math.sqrt(targetX * targetX + targetY * targetY);
+
+      let dir = new createjs.Point(targetX / mag, targetY / mag);
+
+      let bullet = new objects.Bullet(
+        this.bulletSpawn.x,
+        this.bulletSpawn.y,
+        dir
+      );
+
+      this.stage.addChild(bullet);
+      this.bullets.push(bullet);
+    }
   }
 }
