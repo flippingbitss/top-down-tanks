@@ -7,7 +7,7 @@ module objects {
 
     // CONSTRUCTORS
     constructor() {
-      super("plane");
+      super("playerTank");
       this.Start();
     }
     // PRIVATE METHODS

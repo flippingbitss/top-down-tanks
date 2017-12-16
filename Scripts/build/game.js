@@ -102,10 +102,12 @@ var config;
     var Screen = /** @class */ (function () {
         function Screen() {
         }
-        Screen.WIDTH = 640;
-        Screen.HEIGHT = 480;
+        Screen.WIDTH = 1280;
+        Screen.HEIGHT = 720;
         Screen.HALF_WIDTH = Screen.WIDTH * 0.5;
         Screen.HALF_HEIGHT = Screen.HEIGHT * 0.5;
+        Screen.TILE_SIZE = 128;
+        Screen.FONT_FAMILY = "Dock51";
         return Screen;
     }());
     config.Screen = Screen;
@@ -187,7 +189,16 @@ var managers;
         { id: "nextButton", src: "./Assets/images/nextButton.png" },
         { id: "restartButton", src: "./Assets/images/restartButton.png" },
         { id: "startButton", src: "./Assets/images/startButton.png" },
-        { id: "plane", src: "./Assets/images/plane.png" }
+        { id: "plane", src: "./Assets/images/plane.png" },
+        // images
+        { id: "playerTank", src: "./Assets/images/greenTank.png" },
+        { id: "enemyTank", src: "./Assets/images/redTank.png" },
+        { id: "menuBackground", src: "./Assets/images/tankWall3.jpg" },
+        { id: "dirt", src: "./Assets/images/Environment/dirt.png" },
+        // sounds
+        { id: "playMusic", src: "./Assets/audio/play.mp3" },
+        { id: "endMusic", src: "./Assets/audio/end.mp3" },
+        { id: "menuMusic", src: "./Assets/audio/menu.mp3" }
     ];
     var AssetManager = /** @class */ (function (_super) {
         __extends(AssetManager, _super);
@@ -429,6 +440,24 @@ var objects;
 })(objects || (objects = {}));
 var objects;
 (function (objects) {
+    var Enemy = /** @class */ (function () {
+        // PUBLIC PROPERTIES
+        // CONSTRUCTORS
+        function Enemy(x, y, waypoints) {
+            //     super(
+            //     "enemyTank",
+            //     x * config.Screen.TILE_SIZE,
+            //     y * config.Screen.TILE_SIZE
+            //   );
+            this._waypoints = waypoints;
+            // this.Start();
+        }
+        return Enemy;
+    }());
+    objects.Enemy = Enemy;
+})(objects || (objects = {}));
+var objects;
+(function (objects) {
     var Game = /** @class */ (function () {
         function Game() {
         }
@@ -466,6 +495,27 @@ var objects;
 })(objects || (objects = {}));
 var objects;
 (function (objects) {
+    var Image = /** @class */ (function (_super) {
+        __extends(Image, _super);
+        function Image(image, x, y, isCentered) {
+            if (x === void 0) { x = 0; }
+            if (y === void 0) { y = 0; }
+            if (isCentered === void 0) { isCentered = false; }
+            var _this = _super.call(this, objects.Game.assetManager.getResult(image)) || this;
+            if (isCentered) {
+                _this.regX = _this.getBounds().width * 0.5;
+                _this.regY = _this.getBounds().height * 0.5;
+            }
+            _this.x = x;
+            _this.y = y;
+            return _this;
+        }
+        return Image;
+    }(createjs.Bitmap));
+    objects.Image = Image;
+})(objects || (objects = {}));
+var objects;
+(function (objects) {
     var Label = /** @class */ (function (_super) {
         __extends(Label, _super);
         function Label(text, fontSize, fontFamily, color, x, y, isCentered) {
@@ -495,7 +545,7 @@ var objects;
         // PUBLIC PROPERTIES
         // CONSTRUCTORS
         function Plane() {
-            var _this = _super.call(this, "plane") || this;
+            var _this = _super.call(this, "playerTank") || this;
             _this.Start();
             return _this;
         }
@@ -571,6 +621,47 @@ var objects;
     }(createjs.Container));
     objects.Scene = Scene;
 })(objects || (objects = {}));
+var objects;
+(function (objects) {
+    var Tank = /** @class */ (function (_super) {
+        __extends(Tank, _super);
+        // PUBLIC PROPERTIES
+        // CONSTRUCTORS
+        function Tank() {
+            var _this = _super.call(this, "playerTank") || this;
+            _this.Start();
+            return _this;
+        }
+        // PRIVATE METHODS
+        Tank.prototype._checkBounds = function () {
+            if (this.x >= config.Screen.WIDTH - this.halfWidth) {
+                this.x = config.Screen.WIDTH - this.halfWidth;
+            }
+            if (this.x <= this.halfWidth) {
+                this.x = this.halfWidth;
+            }
+            if (this.y >= config.Screen.HEIGHT - this.halfHeight) {
+                this.y = config.Screen.HEIGHT - this.halfHeight;
+            }
+            if (this.y <= this.halfHeight) {
+                this.y = this.halfHeight;
+            }
+        };
+        // PUBLIC METHODS
+        Tank.prototype.Start = function () {
+            this.x = 320;
+            this.y = 430;
+            this.bulletSpawn = new createjs.Point(this.y - 35, this.x);
+        };
+        Tank.prototype.Update = function () {
+            this.bulletSpawn.x = this.x;
+            this.bulletSpawn.y = this.y - 35;
+            this._checkBounds();
+        };
+        return Tank;
+    }(objects.GameObject));
+    objects.Tank = Tank;
+})(objects || (objects = {}));
 var scenes;
 (function (scenes) {
     var End = /** @class */ (function (_super) {
@@ -615,8 +706,6 @@ var scenes;
         function Play(currentScene) {
             var _this = _super.call(this) || this;
             _this._currentScene = currentScene;
-            // register button event handlers
-            _this._nextButtonClick = _this._nextButtonClick.bind(_this);
             _this.Start();
             return _this;
         }
@@ -627,9 +716,9 @@ var scenes;
         };
         // PUBLIC METHODS
         Play.prototype.Start = function () {
-            this._playLabel = new objects.Label("Play Scene", "60px", "Consolas", config.Color.BLACK, config.Screen.HALF_WIDTH, config.Screen.HALF_HEIGHT, true);
-            this._nextButton = new objects.Button("nextButton", config.Screen.HALF_WIDTH, config.Screen.HALF_HEIGHT + 70, true);
-            this._player = new objects.Plane();
+            this._player = new objects.Tank("playerTank", 5, 5);
+            this._background = new createjs.Container();
+            this._enemies = new Array();
             // uncomment the next line to enable gamepad support
             //this._gamepad = new managers.GamePad(this._player, 0);
             this._mouse = new managers.Mouse(this._player);
@@ -645,10 +734,28 @@ var scenes;
             return this._currentScene;
         };
         Play.prototype.Main = function () {
-            this.addChild(this._playLabel);
-            this.addChild(this._nextButton);
+            this.drawBackground();
+            // this.addTanks();
+            this.addChild(this._background);
             this.addChild(this._player);
-            this._nextButton.on("click", this._nextButtonClick);
+        };
+        // private addTanks():void{
+        //   this._enemies.push(
+        //     new objects.Enemy(6, 5, [[6, 5], [14, 5]]),
+        //     new objects.Enemy(4, 2,  [[4, 2], [7, 2], [7, 3], [4, 3]]),
+        //     new objects.Enemy(16, 2,  [[16, 2], [13, 2], [13, 3], [16, 3]]),
+        //     new objects.Enemy(7, 6,  [[7, 6], [4, 6], [1, 7], [1, 6]]),
+        //     new objects.Enemy(13, 6, [[13, 6], [16, 6], [19, 7], [19,6]])
+        //   );
+        // }
+        Play.prototype.drawBackground = function () {
+            var _a = config.Screen, TILE_SIZE = _a.TILE_SIZE, WIDTH = _a.WIDTH, HEIGHT = _a.HEIGHT;
+            for (var i = 0; i < WIDTH / TILE_SIZE; i++) {
+                for (var j = 0; j < HEIGHT / TILE_SIZE; j++) {
+                    var tile = new objects.Image("dirt", i * TILE_SIZE, j * TILE_SIZE, false);
+                    this._background.addChild(tile);
+                }
+            }
         };
         return Play;
     }(objects.Scene));
@@ -670,19 +777,25 @@ var scenes;
         // PRIVATE METHODS
         Start.prototype._startButtonClick = function (event) {
             this._currentScene = config.Scene.PLAY;
+            this._music.stop();
             this.removeAllChildren();
         };
         // PUBLIC METHODS
         Start.prototype.Start = function () {
             console.log("Start Scene");
-            this._startLabel = new objects.Label("Start Scene", "60px", "Consolas", config.Color.BLACK, config.Screen.HALF_WIDTH, config.Screen.HALF_HEIGHT, true);
+            this._startLabel = new objects.Label("Tank Trials", "60px", config.Screen.FONT_FAMILY, config.Color.BLACK, config.Screen.HALF_WIDTH, config.Screen.HALF_HEIGHT * 0.4, true);
             this._startButton = new objects.Button("startButton", config.Screen.HALF_WIDTH, config.Screen.HALF_HEIGHT + 70, true);
+            this._background = new createjs.Bitmap(objects.Game.assetManager.getResult("menuBackground"));
+            this._background.alpha = 0.8;
+            this._background.setBounds(0, 0, config.Screen.WIDTH, config.Screen.HEIGHT);
+            this._music = createjs.Sound.play("menuMusic", createjs.Sound.INTERRUPT_NONE, 1, 0, 1000);
             this.Main();
         };
         Start.prototype.Update = function () {
             return this._currentScene;
         };
         Start.prototype.Main = function () {
+            this.addChild(this._background);
             this.addChild(this._startLabel);
             this.addChild(this._startButton);
             this._startButton.on("click", this._startButtonClick);
